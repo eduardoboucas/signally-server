@@ -27,9 +27,18 @@ app.get('/:deviceId/state', (req, res) => {
 })
 
 app.put('/:deviceId/state', (req, res) => {
-  let requestId = getRequestId(req.params.deviceId)
+  const requestId = getRequestId(req.params.deviceId)
+  const {
+    amber,
+    green,
+    red
+  } = req.body
 
-  io.emit('setState', requestId)
+  io.emit('setState', requestId, {
+    amber,
+    green,
+    red
+  })
 
   res.end()
 })
@@ -54,6 +63,6 @@ io.on('connection', socket => {
   })
 })
 
-http.listen(3123, () => {
-  console.log('listening on *:3123')
+http.listen(process.env.PORT || 3123, () => {
+  console.log('Server listening')
 })
