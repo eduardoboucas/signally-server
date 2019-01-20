@@ -12,6 +12,10 @@ app.use(bodyParser.json())
 let pool = {}
 let queue = {}
 
+app.get('/hello', (req, res) => {
+  res.send('Hello!')
+})
+
 app.get('/:deviceId/state', (req, res) => {
   const socket = pool[req.params.deviceId]
 
