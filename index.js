@@ -11,12 +11,23 @@ app.use(bodyParser.json())
 
 let pool = {}
 let queue = {}
+let stateCache = {}
 
 app.get('/hello', (req, res) => {
   res.send('Hello!')
 })
 
+app.get('/status', (req, res) => {
+  res.send(JSON.stringify(stateCache))
+})
+
 app.get('/:deviceId/state', (req, res) => {
+  const {deviceId} = req.params
+
+  if (!pool[deviceId]) {
+    return res.status(404).send()
+  }
+
   const socket = pool[req.params.deviceId]
 
   if (!socket) {
@@ -31,7 +42,13 @@ app.get('/:deviceId/state', (req, res) => {
 })
 
 app.put('/:deviceId/state', (req, res) => {
-  const requestId = getRequestId(req.params.deviceId)
+  const {deviceId} = req.params
+
+  if (!pool[deviceId]) {
+    return res.status(404).send()
+  }
+
+  const requestId = getRequestId(deviceId)
   const {
     amber,
     green,
@@ -48,22 +65,41 @@ app.put('/:deviceId/state', (req, res) => {
 })
 
 io.on('connection', socket => {
-  console.log('Connected')
+  socket.on('disconnect', () => {
+    const {__signallyId: deviceId} = socket
+
+    if (deviceId) {
+      console.log('Device disconnected:', deviceId)
+
+      delete pool[deviceId]
+      delete stateCache[deviceId]
+    }
+  })
 
   socket.on('register', deviceId => {
     console.log('Device registered:', deviceId)
 
+    socket.__signallyId = deviceId
+
     pool[deviceId] = socket
+
+    let requestId = getRequestId(deviceId)
+
+    socket.emit('getState', requestId)
   })
 
   socket.on('state', (requestId, state) => {
-    console.log('Client state:', requestId, state)
+    const {__signallyId: deviceId} = socket
+
+    console.log('Client state:', {deviceId, requestId, state})
 
     if (queue[requestId]) {
       queue[requestId].end(state.toString())
 
       queue[requestId] = null
     }
+
+    stateCache[deviceId] = state
   })
 })
 
