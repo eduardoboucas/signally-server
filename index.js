@@ -1,5 +1,6 @@
 const app = require('express')()
 const bodyParser = require('body-parser')
+const cors = require('cors')
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
 
@@ -8,6 +9,7 @@ function getRequestId(deviceId) {
 }
 
 app.use(bodyParser.json())
+app.use(cors())
 
 let pool = {}
 let queue = {}
