@@ -43,7 +43,7 @@ app.get('/:deviceId/state', (req, res) => {
   queue[requestId] = res
 })
 
-app.put('/:deviceId/state', (req, res) => {
+const postPutHandler = (req, res) => {
   const {deviceId} = req.params
 
   if (!pool[deviceId]) {
@@ -52,9 +52,9 @@ app.put('/:deviceId/state', (req, res) => {
 
   const requestId = getRequestId(deviceId)
   const {
-    amber,
-    green,
-    red
+    amber = (req.query.amber === 'true'),
+    green = (req.query.green === 'true'),
+    red = (req.query.red === 'true')
   } = req.body
 
   io.emit('setState', requestId, {
@@ -64,7 +64,10 @@ app.put('/:deviceId/state', (req, res) => {
   })
 
   res.end()
-})
+}
+
+app.post('/:deviceId/state', postPutHandler)
+app.put('/:deviceId/state', postPutHandler)
 
 io.on('connection', socket => {
   socket.on('disconnect', () => {
